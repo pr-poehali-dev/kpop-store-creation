@@ -1,9 +1,36 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Icon from "@/components/ui/icon";
 
+interface Product {
+  id: number;
+  title: string;
+  price: string;
+  priceNum: number;
+  category: string;
+  artist: string;
+  image: string;
+  description: string;
+  tracks?: string[];
+  specifications?: string[];
+}
+
+interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
 export default function Index() {
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedArtist, setSelectedArtist] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+
   const artists = [
     {
       name: "Royal Crush",
@@ -22,44 +49,125 @@ export default function Index() {
     }
   ];
 
-  const products = [
+  const products: Product[] = [
     {
+      id: 1,
+      title: "Jonhie - OR: T&T (Saddest Ver.)",
+      price: "$34.99",
+      priceNum: 34.99,
+      category: "Albums",
+      artist: "Jonhie",
+      image: "https://cdn.poehali.dev/files/884c6520-bb55-46cf-b85f-528136f7741d.jpg",
+      description: "1st Mini Album by Jonhie from NO1CE. Limited Saddest Version with exclusive photobook and photo cards.",
+      tracks: ["Track 1: OR", "Track 2: T&T", "Track 3: Saddest", "Track 4: Outro"],
+      specifications: ["CD + Photobook (64 pages)", "2 Photo Cards", "1 Poster", "Limited Edition Packaging"]
+    },
+    {
+      id: 2,
       title: "Royal Crush Limited Album",
       price: "$29.99",
+      priceNum: 29.99,
       category: "Albums",
-      image: "/placeholder.svg"
+      artist: "Royal Crush",
+      image: "/img/454527d2-1c11-42ea-ae90-d2f1356dcc26.jpg",
+      description: "Latest album from Royal Crush with exclusive content and premium packaging.",
+      tracks: ["Track 1: Royal", "Track 2: Crush", "Track 3: Dreams", "Track 4: Forever"],
+      specifications: ["CD + Booklet (32 pages)", "3 Photo Cards", "1 Poster", "Special Packaging"]
     },
     {
+      id: 3,
       title: "2COOL Photo Card Set",
-      price: "$19.99", 
+      price: "$19.99",
+      priceNum: 19.99,
       category: "Photo Cards",
-      image: "/placeholder.svg"
+      artist: "2COOL",
+      image: "/placeholder.svg",
+      description: "Complete photo card collection featuring all members of 2COOL.",
+      specifications: ["15 Photo Cards", "Special Holographic Finish", "Collector's Box", "Certificate of Authenticity"]
     },
     {
+      id: 4,
       title: "NO1CE Official Hoodie",
       price: "$49.99",
+      priceNum: 49.99,
       category: "Apparel",
-      image: "/placeholder.svg"
+      artist: "NO1CE",
+      image: "/placeholder.svg",
+      description: "Premium quality hoodie with NO1CE official logo and design.",
+      specifications: ["100% Cotton", "Available Sizes: S-XL", "Official Logo Print", "Comfortable Fit"]
     },
     {
-      title: "Jonhie Solo Poster",
+      id: 5,
+      title: "Haerin Solo Poster",
       price: "$14.99",
+      priceNum: 14.99,
       category: "Posters", 
-      image: "/placeholder.svg"
+      artist: "Haerin",
+      image: "/placeholder.svg",
+      description: "Exclusive poster featuring Haerin from NO1CE in high-quality print.",
+      specifications: ["Size: 24x36 inches", "High-Quality Print", "Matte Finish", "Tube Packaging"]
     },
     {
-      title: "Haerin Photobook",
-      price: "$34.99",
-      category: "Books",
-      image: "/placeholder.svg"
-    },
-    {
+      id: 6,
       title: "EXPERIMENT Bundle",
       price: "$89.99",
+      priceNum: 89.99,
       category: "Bundles",
-      image: "/placeholder.svg"
+      artist: "All Artists",
+      image: "/img/c7f4118d-bb2b-4f43-88cc-2f65138a351b.jpg",
+      description: "Complete bundle with items from all EXPERIMENT ENTERTAINMENT artists.",
+      specifications: ["3 Albums", "Photo Card Set", "2 Posters", "Limited Edition Items"]
     }
   ];
+
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === product.id);
+      if (existing) {
+        return prev.map(item => 
+          item.product.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+  };
+
+  const removeFromCart = (productId: number) => {
+    setCart(prev => prev.filter(item => item.product.id !== productId));
+  };
+
+  const updateQuantity = (productId: number, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart(prev => 
+      prev.map(item => 
+        item.product.id === productId 
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  };
+
+  const getTotalItems = () => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  };
+
+  const getTotalPrice = () => {
+    return cart.reduce((sum, item) => sum + (item.product.priceNum * item.quantity), 0).toFixed(2);
+  };
+
+  const filteredProducts = products.filter(product => {
+    const artistMatch = selectedArtist === "All" || product.artist === selectedArtist;
+    const categoryMatch = selectedCategory === "All" || product.category === selectedCategory;
+    return artistMatch && categoryMatch;
+  });
+
+  const artistsList = ["All", ...Array.from(new Set(products.map(p => p.artist)))];
+  const categoriesList = ["All", ...Array.from(new Set(products.map(p => p.category)))];
 
   return (
     <div className="min-h-screen bg-background">
@@ -85,10 +193,77 @@ export default function Index() {
               <Button variant="ghost" size="sm">
                 <Icon name="Heart" size={16} />
               </Button>
-              <Button variant="ghost" size="sm">
-                <Icon name="ShoppingCart" size={16} />
-                <Badge variant="destructive" className="ml-1">3</Badge>
-              </Button>
+              
+              {/* Cart Sheet */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Icon name="ShoppingCart" size={16} />
+                    {getTotalItems() > 0 && (
+                      <Badge variant="destructive" className="ml-1">{getTotalItems()}</Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Shopping Cart ({getTotalItems()} items)</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-4">
+                    {cart.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Your cart is empty</p>
+                    ) : (
+                      <>
+                        {cart.map((item) => (
+                          <div key={item.product.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                            <img 
+                              src={item.product.image} 
+                              alt={item.product.title}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm">{item.product.title}</h4>
+                              <p className="text-primary font-bold">{item.product.price}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                              >
+                                -
+                              </Button>
+                              <span className="w-8 text-center">{item.quantity}</span>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                              >
+                                +
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => removeFromCart(item.product.id)}
+                              >
+                                <Icon name="Trash2" size={16} />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="border-t pt-4">
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="text-lg font-semibold">Total: ${getTotalPrice()}</span>
+                          </div>
+                          <Button className="w-full" size="lg">
+                            Checkout
+                            <Icon name="CreditCard" size={16} className="ml-2" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
@@ -177,26 +352,70 @@ export default function Index() {
             </p>
           </div>
 
+          {/* Filters */}
+          <div className="mb-8 flex flex-wrap gap-4 justify-center">
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm font-medium">Artists:</span>
+              {artistsList.map(artist => (
+                <Button 
+                  key={artist}
+                  variant={selectedArtist === artist ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedArtist(artist)}
+                >
+                  {artist}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm font-medium">Categories:</span>
+              {categoriesList.map(category => (
+                <Button 
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product, index) => (
-              <Card key={index} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
-                <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 group-hover:from-primary/20 group-hover:to-secondary/20 transition-all duration-300" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Icon name="Package" size={60} className="text-muted-foreground/40" />
-                  </div>
+            {filteredProducts.map((product) => (
+              <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                <div className="aspect-square relative overflow-hidden">
+                  <img 
+                    src={product.image}
+                    alt={product.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                   <Badge className="absolute top-4 left-4">
                     {product.category}
+                  </Badge>
+                  <Badge variant="secondary" className="absolute top-4 right-4">
+                    {product.artist}
                   </Badge>
                 </div>
                 <CardContent className="p-6">
                   <h4 className="font-semibold text-lg mb-2">{product.title}</h4>
-                  <div className="flex justify-between items-center">
+                  <p className="text-muted-foreground text-sm mb-4 line-clamp-2">{product.description}</p>
+                  <div className="flex justify-between items-center gap-2">
                     <span className="text-2xl font-bold text-primary">{product.price}</span>
-                    <Button size="sm">
-                      <Icon name="Plus" size={16} className="mr-2" />
-                      Add to Cart
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setSelectedProduct(product)}
+                      >
+                        <Icon name="Eye" size={16} />
+                      </Button>
+                      <Button size="sm" onClick={() => addToCart(product)}>
+                        <Icon name="Plus" size={16} className="mr-2" />
+                        Add to Cart
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -204,6 +423,77 @@ export default function Index() {
           </div>
         </div>
       </section>
+
+      {/* Product Detail Modal */}
+      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
+        <DialogContent className="max-w-4xl">
+          {selectedProduct && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedProduct.title}</DialogTitle>
+              </DialogHeader>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="aspect-square">
+                  <img 
+                    src={selectedProduct.image}
+                    alt={selectedProduct.title}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex gap-2 mb-2">
+                      <Badge>{selectedProduct.category}</Badge>
+                      <Badge variant="secondary">{selectedProduct.artist}</Badge>
+                    </div>
+                    <p className="text-3xl font-bold text-primary">{selectedProduct.price}</p>
+                  </div>
+                  <p className="text-muted-foreground">{selectedProduct.description}</p>
+                  
+                  <Tabs defaultValue="specs" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="specs">Specifications</TabsTrigger>
+                      <TabsTrigger value="tracks">Track List</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="specs" className="space-y-2">
+                      {selectedProduct.specifications?.map((spec, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Icon name="Check" size={16} className="text-primary" />
+                          <span className="text-sm">{spec}</span>
+                        </div>
+                      ))}
+                    </TabsContent>
+                    <TabsContent value="tracks" className="space-y-2">
+                      {selectedProduct.tracks ? (
+                        selectedProduct.tracks.map((track, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Icon name="Music" size={16} className="text-primary" />
+                            <span className="text-sm">{track}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground text-sm">No track list available</p>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                  
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => {
+                      addToCart(selectedProduct);
+                      setSelectedProduct(null);
+                    }}
+                  >
+                    <Icon name="ShoppingCart" size={16} className="mr-2" />
+                    Add to Cart - {selectedProduct.price}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer className="bg-foreground text-background py-16 px-4">
